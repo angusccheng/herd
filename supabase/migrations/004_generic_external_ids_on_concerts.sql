@@ -1,4 +1,5 @@
 alter table concerts
+  add column if not exists event_name text,
   add column if not exists event_external_id text,
   add column if not exists event_external_source text,
   add column if not exists artist_external_id text,

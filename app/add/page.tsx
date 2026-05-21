@@ -358,7 +358,7 @@ function CanonicalSearchInput({
         })
         if (city) params.set('city', city)
 
-        const res = await fetch(`/api/canonical/search?${params.toString()}`, {
+        const res = await fetch(`/api/search?${params.toString()}`, {
           signal: controller.signal,
         })
         const data = await res.json()

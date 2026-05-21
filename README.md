@@ -1,6 +1,25 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# herd
 
-## Getting Started
+Herd is a concert logging and ranking app for building a personal taste profile from shows you have attended. Users log a show, place it into a ranked list through lightweight comparisons, and can edit notes or rerank later.
+
+## Features
+
+- Add concerts with artist, venue, city, date, optional tour/event name, notes, and sentiment.
+- API-backed search using Spotify for artists, Ticketmaster for venues/current events/cities, and setlist.fm for historical concert lookup.
+- Binary-comparison ranking flow that recalculates scores across the relevant sentiment bucket.
+- Concert detail pages with editable notes and reranking.
+- Soft mobile-friendly UI with bottom navigation for rankings, add, and profile.
+
+## Stack
+
+- Next.js App Router
+- React
+- Supabase
+- Spotify Web API
+- Ticketmaster Discovery API
+- setlist.fm API
+
+## Environment
 
 Create `.env.local` from `.env.example` and fill in:
 
@@ -13,37 +32,24 @@ SPOTIFY_CLIENT_ID=...
 SPOTIFY_CLIENT_SECRET=...
 ```
 
-The API keys are server-only. Herd uses Spotify for artist suggestions, Ticketmaster for venues/current music events/cities, and setlist.fm for historical concert/event suggestions.
+These API keys are used server-side by the search route. Do not commit `.env.local`.
 
-First, run the development server:
+## Database
+
+Run the Supabase migrations in `supabase/migrations` before using the app with a fresh database.
+
+## Development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Checks
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run lint
+npm run build
+```
