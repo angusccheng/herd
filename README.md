@@ -2,6 +2,19 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+Create `.env.local` from `.env.example` and fill in:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+TICKETMASTER_API_KEY=...
+SETLISTFM_API_KEY=...
+SPOTIFY_CLIENT_ID=...
+SPOTIFY_CLIENT_SECRET=...
+```
+
+The API keys are server-only. Herd uses Spotify for artist suggestions, Ticketmaster for venues/current music events/cities, and setlist.fm for historical concert/event suggestions.
+
 First, run the development server:
 
 ```bash
