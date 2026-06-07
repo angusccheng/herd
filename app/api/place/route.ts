@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { isSentimentBucket } from '@/lib/ranking'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -7,56 +8,51 @@ const supabase = createClient(
 )
 
 export async function POST(req: NextRequest) {
-  const { concertId, userId, eloScore, placements } = await req.json()
+  const { userId, newConcertId, bucket, rankPosition, previousRankPosition } = await req.json()
 
-  if (!userId) {
-    return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+  if (!userId || !newConcertId || !isSentimentBucket(bucket) || typeof rankPosition !== 'number') {
+    return NextResponse.json({ error: 'Missing or invalid fields' }, { status: 400 })
   }
 
-  if (Array.isArray(placements)) {
-    const updates = placements.filter((placement) =>
-      placement &&
-      typeof placement.concertId === 'string' &&
-      typeof placement.eloScore === 'number'
-    )
+  if (typeof previousRankPosition === 'number') {
+    const { data: toShiftUp } = await supabase
+      .from('concerts')
+      .select('id, rank_position')
+      .eq('user_id', userId)
+      .eq('bucket', bucket)
+      .neq('id', newConcertId)
+      .gt('rank_position', previousRankPosition)
 
-    if (updates.length === 0) {
-      return NextResponse.json({ error: 'Missing placements' }, { status: 400 })
+    if (toShiftUp && toShiftUp.length > 0) {
+      await Promise.all(toShiftUp.map(c =>
+        supabase.from('concerts').update({ rank_position: c.rank_position - 1 }).eq('id', c.id)
+      ))
     }
-
-    const results = await Promise.all(updates.map((placement) =>
-      supabase
-        .from('concerts')
-        .update({ elo_score: Math.round(placement.eloScore) })
-        .eq('id', placement.concertId)
-        .eq('user_id', userId)
-    ))
-
-    if (results.some(result => result.error)) {
-      return NextResponse.json({ error: 'Failed to place concerts' }, { status: 500 })
-    }
-
-    return NextResponse.json({
-      placements: updates.map((placement) => ({
-        concertId: placement.concertId,
-        eloScore: Math.round(placement.eloScore),
-      })),
-    })
   }
 
-  if (!concertId || typeof eloScore !== 'number') {
-    return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
-  }
-
-  const { error } = await supabase
+  const { data: toShift } = await supabase
     .from('concerts')
-    .update({ elo_score: Math.round(eloScore) })
-    .eq('id', concertId)
+    .select('id, rank_position')
+    .eq('user_id', userId)
+    .eq('bucket', bucket)
+    .neq('id', newConcertId)
+    .gte('rank_position', rankPosition)
+
+  if (toShift && toShift.length > 0) {
+    await Promise.all(toShift.map(c =>
+      supabase.from('concerts').update({ rank_position: c.rank_position + 1 }).eq('id', c.id)
+    ))
+  }
+
+  const { error: placeError } = await supabase
+    .from('concerts')
+    .update({ bucket, rank_position: rankPosition })
+    .eq('id', newConcertId)
     .eq('user_id', userId)
 
-  if (error) {
+  if (placeError) {
     return NextResponse.json({ error: 'Failed to place concert' }, { status: 500 })
   }
 
-  return NextResponse.json({ eloScore: Math.round(eloScore) })
+  return NextResponse.json({ bucket, rankPosition })
 }

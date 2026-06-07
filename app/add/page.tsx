@@ -114,7 +114,8 @@ export default function AddConcertPage() {
       date: form.date || null,
       notes: form.notes.trim() || null,
       genres: form.genres,
-      elo_score: SENTIMENT_BUCKETS[sentiment].score,
+      bucket: sentiment,
+      rank_position: null,
     }
 
     const legacyPayload = {
@@ -125,7 +126,8 @@ export default function AddConcertPage() {
       date: externalPayload.date,
       notes: buildNotes(externalPayload.event_name || '', form.notes),
       genres: externalPayload.genres,
-      elo_score: externalPayload.elo_score,
+      bucket: externalPayload.bucket,
+      rank_position: null,
     }
 
     const { data, error: insertError } = await insertConcert(externalPayload, legacyPayload)

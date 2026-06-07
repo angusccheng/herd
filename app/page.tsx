@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase, Concert } from '@/lib/supabase'
-import { getConcertBucket, getRatingColor, getRatingDisplay } from '@/lib/ranking'
+import { getConcertBucket, getRatingColor, getRatingDisplay, sortConcerts, SentimentBucket } from '@/lib/ranking'
 
 const PLACEHOLDER_USER_ID = '00000000-0000-0000-0000-000000000001'
 
@@ -20,8 +20,7 @@ export default function HomePage() {
   const [concerts, setConcerts] = useState<Concert[]>([])
   const [loading, setLoading] = useState(true)
   const bucketCounts = concerts.reduce<Record<string, number>>((counts, concert) => {
-    const bucket = getConcertBucket(concert)
-    counts[bucket] = (counts[bucket] || 0) + 1
+    counts[concert.bucket] = (counts[concert.bucket] || 0) + 1
     return counts
   }, {})
 
@@ -31,9 +30,8 @@ export default function HomePage() {
         .from('concerts')
         .select('*')
         .eq('user_id', PLACEHOLDER_USER_ID)
-        .order('elo_score', { ascending: false })
 
-      if (!error) setConcerts(data || [])
+      if (!error) setConcerts(sortConcerts(data || []))
       setLoading(false)
     }
 
@@ -64,8 +62,10 @@ export default function HomePage() {
         <div className="surface-grid">
           <section className="panel rank-list" aria-label="Ranked concerts">
             {concerts.map((concert, index) => {
-              const color = getRatingColor(concert.elo_score)
-              const isBaseline = bucketCounts[getConcertBucket(concert)] === 1
+              const bucket = getConcertBucket(concert)
+              const color = getRatingColor(bucket)
+              const total = bucketCounts[bucket] ?? 1
+              const isBaseline = total === 1
 
               return (
                 <Link
@@ -86,7 +86,7 @@ export default function HomePage() {
                     aria-label={isBaseline ? 'Score locked until another show is ranked in this bucket' : undefined}
                     title={isBaseline ? 'Score locked' : undefined}
                   >
-                    {isBaseline ? '' : getRatingDisplay(concert.elo_score)}
+                    {isBaseline || concert.rank_position == null ? '' : getRatingDisplay(bucket as SentimentBucket, concert.rank_position, total)}
                   </div>
                 </Link>
               )

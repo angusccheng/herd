@@ -18,6 +18,7 @@ export type Concert = {
   date: string | null
   notes: string | null
   genres: string[]
-  elo_score: number
+  bucket: 'liked' | 'fine' | 'didnt'
+  rank_position: number | null
   created_at: string
 }

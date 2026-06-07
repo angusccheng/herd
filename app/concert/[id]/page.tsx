@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase, Concert } from '@/lib/supabase'
-import { getConcertBucket, getRatingColor, getRatingDisplay } from '@/lib/ranking'
+import { getConcertBucket, getRatingColor, getRatingDisplay, SentimentBucket } from '@/lib/ranking'
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return ''
@@ -20,6 +20,7 @@ export default function ConcertDetailPage() {
   const params = useParams()
   const router = useRouter()
   const [concert, setConcert] = useState<Concert | null>(null)
+  const [bucketTotal, setBucketTotal] = useState(1)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
   const [editingNotes, setEditingNotes] = useState(false)
@@ -40,6 +41,13 @@ export default function ConcertDetailPage() {
       } else {
         setConcert(data)
         setNotesDraft(data.notes || '')
+
+        const { count } = await supabase
+          .from('concerts')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', data.user_id)
+          .eq('bucket', data.bucket)
+        setBucketTotal(count ?? 1)
       }
       setLoading(false)
     }
@@ -108,7 +116,8 @@ export default function ConcertDetailPage() {
     )
   }
 
-  const color = getRatingColor(concert.elo_score)
+  const bucket = getConcertBucket(concert)
+  const color = getRatingColor(bucket)
 
   return (
     <main className="app-shell">
@@ -128,7 +137,9 @@ export default function ConcertDetailPage() {
           </div>
           <div className="detail-score-stack">
             <div className="score-pill" style={{ color }}>
-              {getRatingDisplay(concert.elo_score)}
+              {concert.rank_position != null && bucketTotal > 1
+                ? getRatingDisplay(bucket as SentimentBucket, concert.rank_position, bucketTotal)
+                : ''}
             </div>
             <button className="button secondary" type="button" onClick={handleRerank}>
               Rerank
