@@ -7,7 +7,6 @@ import { supabase, Concert } from '@/lib/supabase'
 import {
   getConcertBucket,
   isSentimentBucket,
-  scoreForRank,
   SentimentBucket,
 } from '@/lib/ranking'
 
@@ -75,7 +74,6 @@ function CompareContent() {
         .from('concerts')
         .select('*')
         .eq('user_id', PLACEHOLDER_USER_ID)
-        .order('elo_score', { ascending: false })
 
       if (fetchError || !data) {
         setError(fetchError?.message || 'Could not load concerts')
@@ -100,7 +98,7 @@ function CompareContent() {
         : getConcertBucket(newConcert)
       const pool = data
         .filter(c => c.id !== newConcert.id && getConcertBucket(c) === bucket)
-        .sort((a, b) => b.elo_score - a.elo_score)
+        .sort((a, b) => (a.rank_position ?? 0) - (b.rank_position ?? 0))
 
       setState({
         newConcert,
@@ -125,22 +123,18 @@ function CompareContent() {
   const canSkip = !!state && !!opponent && candidateCount > 1
 
   async function finalizePlacement(nextState: PlacementState, finalIndex: number) {
-    const orderedConcerts = [
-      ...nextState.pool.slice(0, finalIndex),
-      nextState.newConcert,
-      ...nextState.pool.slice(finalIndex),
-    ]
-    const placements = orderedConcerts.map((concert, index) => ({
-      concertId: concert.id,
-      eloScore: scoreForRank(nextState.bucket, index, orderedConcerts.length),
-    }))
+    const rankPosition = finalIndex + 1
+    const previousRankPosition = nextState.newConcert.rank_position ?? undefined
 
     const res = await fetch('/api/place', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userId: PLACEHOLDER_USER_ID,
-        placements,
+        newConcertId: nextState.newConcert.id,
+        bucket: nextState.bucket,
+        rankPosition,
+        previousRankPosition,
       }),
     })
 
@@ -191,7 +185,7 @@ function CompareContent() {
 
     setState({
       ...state,
-      skippedIds: remaining.length === 0 ? [opponent.id] : skippedIds,
+      skippedIds: remaining.length === 0 ? [] : skippedIds,
     })
   }
 
