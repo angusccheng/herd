@@ -55,9 +55,46 @@ export default function ConcertDetailPage() {
     fetchConcert()
   }, [params.id])
 
+  useEffect(() => {
+    if (!concert) return
+
+    async function refreshTotal() {
+      if (document.hidden) return
+      const { count } = await supabase
+        .from('concerts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', concert!.user_id)
+        .eq('bucket', concert!.bucket)
+      setBucketTotal(count ?? 1)
+    }
+
+    document.addEventListener('visibilitychange', refreshTotal)
+    return () => document.removeEventListener('visibilitychange', refreshTotal)
+  }, [concert])
+
   async function handleDelete() {
     if (!confirm('Delete this show?')) return
     setDeleting(true)
+
+    // Compact rank positions: shift all shows ranked below this one up by 1
+    if (concert && concert.rank_position !== null) {
+      const { data: toCompact } = await supabase
+        .from('concerts')
+        .select('id, rank_position')
+        .eq('user_id', concert.user_id)
+        .eq('bucket', concert.bucket)
+        .gt('rank_position', concert.rank_position)
+        .neq('id', concert.id)
+
+      if (toCompact && toCompact.length > 0) {
+        await Promise.all(
+          toCompact.map(c =>
+            supabase.from('concerts').update({ rank_position: c.rank_position! - 1 }).eq('id', c.id)
+          )
+        )
+      }
+    }
+
     await supabase.from('concerts').delete().eq('id', params.id)
     router.push('/')
   }
