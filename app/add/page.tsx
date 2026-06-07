@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { SENTIMENT_BUCKETS, SentimentBucket } from '@/lib/ranking'
-
-const PLACEHOLDER_USER_ID = '00000000-0000-0000-0000-000000000001'
+import { useUser } from '@/lib/auth'
 
 const SENTIMENT_COLORS: Record<SentimentBucket, string> = {
   liked: 'var(--good)',
@@ -35,6 +34,7 @@ type CanonicalSearchResult = {
 
 export default function AddConcertPage() {
   const router = useRouter()
+  const { user } = useUser()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [sentiment, setSentiment] = useState<SentimentBucket | null>(null)
@@ -97,7 +97,7 @@ export default function AddConcertPage() {
     }
 
     const externalPayload = {
-      user_id: PLACEHOLDER_USER_ID,
+      user_id: user!.id,
       event_external_id: form.event_external_id || null,
       event_external_source: form.event_external_source || null,
       artist_external_id: form.artist_external_id || null,
@@ -119,7 +119,7 @@ export default function AddConcertPage() {
     }
 
     const legacyPayload = {
-      user_id: PLACEHOLDER_USER_ID,
+      user_id: user!.id,
       artist_name: externalPayload.artist_name,
       venue_name: externalPayload.venue_name,
       city: externalPayload.city,

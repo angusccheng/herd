@@ -9,8 +9,7 @@ import {
   isSentimentBucket,
   SentimentBucket,
 } from '@/lib/ranking'
-
-const PLACEHOLDER_USER_ID = '00000000-0000-0000-0000-000000000001'
+import { useUser } from '@/lib/auth'
 
 type PlacementState = {
   newConcert: Concert
@@ -61,6 +60,7 @@ function CompareContent() {
   const searchParams = useSearchParams()
   const newConcertId = searchParams.get('new')
   const bucketParam = searchParams.get('bucket')
+  const { user } = useUser()
 
   const [state, setState] = useState<PlacementState | null>(null)
   const [history, setHistory] = useState<PlacementState[]>([])
@@ -69,11 +69,13 @@ function CompareContent() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    if (!user) return
+
     async function fetchConcerts() {
       const { data, error: fetchError } = await supabase
         .from('concerts')
         .select('*')
-        .eq('user_id', PLACEHOLDER_USER_ID)
+        .eq('user_id', user!.id)
 
       if (fetchError || !data) {
         setError(fetchError?.message || 'Could not load concerts')
@@ -115,7 +117,7 @@ function CompareContent() {
     }
 
     fetchConcerts()
-  }, [bucketParam, newConcertId, router])
+  }, [bucketParam, newConcertId, router, user])
 
   const opponentIndex = chooseOpponentIndex(state)
   const opponent = opponentIndex !== null && state ? state.pool[opponentIndex] : null
@@ -130,7 +132,7 @@ function CompareContent() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        userId: PLACEHOLDER_USER_ID,
+        userId: user!.id,
         newConcertId: nextState.newConcert.id,
         bucket: nextState.bucket,
         rankPosition,

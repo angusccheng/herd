@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation'
 export function BottomNav() {
   const pathname = usePathname()
 
+  if (pathname.startsWith('/login') || pathname.startsWith('/auth')) return null
+
   return (
     <nav className="bottom-nav" aria-label="Primary navigation">
       <Link className={`nav-item ${pathname === '/' ? 'active' : ''}`} href="/">

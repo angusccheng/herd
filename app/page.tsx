@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase, Concert } from '@/lib/supabase'
 import { getConcertBucket, getRatingColor, getRatingDisplay, sortConcerts, SentimentBucket } from '@/lib/ranking'
-
-const PLACEHOLDER_USER_ID = '00000000-0000-0000-0000-000000000001'
+import { useUser } from '@/lib/auth'
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return ''
@@ -17,6 +16,7 @@ function formatDate(dateStr: string | null) {
 }
 
 export default function HomePage() {
+  const { user } = useUser()
   const [concerts, setConcerts] = useState<Concert[]>([])
   const [loading, setLoading] = useState(true)
   const bucketCounts = concerts.reduce<Record<string, number>>((counts, concert) => {
@@ -25,18 +25,20 @@ export default function HomePage() {
   }, {})
 
   useEffect(() => {
+    if (!user) return
+
     async function fetchConcerts() {
       const { data, error } = await supabase
         .from('concerts')
         .select('*')
-        .eq('user_id', PLACEHOLDER_USER_ID)
+        .eq('user_id', user!.id)
 
       if (!error) setConcerts(sortConcerts(data || []))
       setLoading(false)
     }
 
     fetchConcerts()
-  }, [])
+  }, [user])
 
   return (
     <main className="app-shell">
