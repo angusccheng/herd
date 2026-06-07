@@ -1,16 +1,33 @@
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { isSentimentBucket } from '@/lib/ranking'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
 export async function POST(req: NextRequest) {
-  const { userId, newConcertId, bucket, rankPosition, previousRankPosition } = await req.json()
+  const cookieStore = await cookies()
 
-  if (!userId || !newConcertId || !isSentimentBucket(bucket) || typeof rankPosition !== 'number') {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return cookieStore.getAll() },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+        },
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { newConcertId, bucket, rankPosition, previousRankPosition } = await req.json()
+  const userId = user.id
+
+  if (!newConcertId || !isSentimentBucket(bucket) || typeof rankPosition !== 'number') {
     return NextResponse.json({ error: 'Missing or invalid fields' }, { status: 400 })
   }
 
