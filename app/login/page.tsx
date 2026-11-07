@@ -37,7 +37,12 @@ function LoginForm() {
     })
 
     if (error) {
-      setError(error.message)
+      const msg = error.message.toLowerCase()
+      if (msg.includes('rate limit') || msg.includes('too many') || msg.includes('after')) {
+        setError('Too many sign-in attempts. Please wait a minute and try again.')
+      } else {
+        setError(error.message)
+      }
       setLoading(false)
       return
     }
@@ -68,7 +73,7 @@ function LoginForm() {
             <button
               className="button secondary"
               type="button"
-              onClick={() => setSent(false)}
+              onClick={() => { setSent(false); setEmail(''); setError('') }}
             >
               Use a different email
             </button>

@@ -35,6 +35,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // First-time users who haven't set a handle yet → onboarding
+  if (user && !user.user_metadata?.username && !pathname.startsWith('/onboarding') && !isPublicRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/onboarding'
+    return NextResponse.redirect(url)
+  }
+
   return supabaseResponse
 }
 

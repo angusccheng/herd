@@ -78,7 +78,13 @@ export default function AddConcertPage() {
       return
     }
 
-    if (form.venue_name.trim() && !form.venue_external_id) {
+    if (!form.venue_name.trim()) {
+      setError('Venue is required')
+      setLoading(false)
+      return
+    }
+
+    if (!form.venue_external_id) {
       setError('Choose a venue from the suggestions')
       setLoading(false)
       return
@@ -232,19 +238,12 @@ export default function AddConcertPage() {
                   onBlur={() => setForm(prev => ({ ...prev, venue_name: prev.venue_name.trim() }))}
                 />
 
-                <CanonicalSearchInput
-                  label="City"
-                  type="city"
-                  value={form.city}
-                  onChange={(value) => setForm(prev => ({ ...prev, city: value }))}
-                  onSelectResult={(result) => {
-                    setForm(prev => ({
-                      ...prev,
-                      city: result.city || result.name,
-                    }))
-                  }}
-                  onBlur={() => setForm(prev => ({ ...prev, city: prev.city.trim() }))}
-                />
+                {form.city && (
+                  <div className="field">
+                    <label className="label">City</label>
+                    <input className="input" value={form.city} readOnly style={{ opacity: 0.6, cursor: 'default' }} />
+                  </div>
+                )}
 
                 <div className="field full">
                   <label className="label" htmlFor="date">Date</label>
@@ -277,6 +276,32 @@ export default function AddConcertPage() {
                     value={form.notes}
                     onChange={handleChange}
                     rows={4}
+                    style={{ resize: 'none' }}
+                  />
+                </div>
+
+                {form.genres.length > 0 && (
+                  <div className="field full">
+                    <label className="label">Genres</label>
+                    <div className="genre-list">
+                      {form.genres.map(g => (
+                        <span
+                          key={g}
+                          className="chip active"
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => setForm(prev => ({ ...prev, genres: prev.genres.filter(x => x !== g) }))}
+                        >
+                          {g} ×
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="field full">
+                  <label className="label">Add genre</label>
+                  <GenreInput
+                    onAdd={(g) => setForm(prev => prev.genres.includes(g) ? prev : { ...prev, genres: [...prev.genres, g] })}
                   />
                 </div>
               </div>
@@ -319,6 +344,29 @@ async function insertConcert(externalPayload: Record<string, unknown>, legacyPay
     .insert(legacyPayload)
     .select()
     .single()
+}
+
+function GenreInput({ onAdd }: { onAdd: (genre: string) => void }) {
+  const [value, setValue] = useState('')
+
+  function submit() {
+    const g = value.trim().toLowerCase()
+    if (g) { onAdd(g); setValue('') }
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: 6 }}>
+      <input
+        className="input"
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submit() } }}
+        placeholder="e.g. indie rock"
+        style={{ flex: 1 }}
+      />
+      <button className="button secondary" type="button" onClick={submit}>Add</button>
+    </div>
+  )
 }
 
 function CanonicalSearchInput({

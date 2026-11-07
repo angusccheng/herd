@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 export function BottomNav() {
   const pathname = usePathname()
 
-  if (pathname.startsWith('/login') || pathname.startsWith('/auth')) return null
+  if (pathname.startsWith('/login') || pathname.startsWith('/auth') || pathname.startsWith('/onboarding')) return null
 
   return (
     <nav className="bottom-nav" aria-label="Primary navigation">

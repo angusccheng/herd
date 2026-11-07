@@ -102,7 +102,7 @@ function CompareContent() {
         .filter(c => c.id !== newConcert.id && getConcertBucket(c) === bucket)
         .sort((a, b) => (a.rank_position ?? 0) - (b.rank_position ?? 0))
 
-      setState({
+      const initialState: PlacementState = {
         newConcert,
         pool,
         bucket,
@@ -111,7 +111,23 @@ function CompareContent() {
         done: pool.length === 0,
         finalIndex: pool.length === 0 ? 0 : null,
         skippedIds: [],
-      })
+      }
+
+      // First show in bucket — stamp rank_position=1 immediately
+      if (pool.length === 0) {
+        await fetch('/api/place', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            newConcertId: newConcert.id,
+            bucket,
+            rankPosition: 1,
+            previousRankPosition: undefined,
+          }),
+        })
+      }
+
+      setState(initialState)
       setHistory([])
       setLoading(false)
     }
