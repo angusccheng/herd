@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation'
 import { supabase, Concert } from '@/lib/supabase'
 import { useUser } from '@/lib/auth'
 import { getRatingColor, getRatingDisplay, SentimentBucket } from '@/lib/ranking'
-import { geocodeCity } from '@/lib/geocode'
+import { geocodePlace } from '@/lib/geocode'
 import type { MapPoint } from '@/app/components/ConcertMap'
 
 const ConcertMap = dynamic(
@@ -124,20 +124,26 @@ export default function ProfilePage() {
       })
     }
 
-    supabase.from('concerts').select('*').eq('user_id', user.id).then(({ data }) => {
+    supabase.from('concerts').select('*').eq('user_id', user.id).then(async ({ data }) => {
       const allConcerts = data ?? []
       setConcerts(allConcerts)
 
-      const cityCount: Record<string, number> = {}
+      // Group by venue + city so each venue gets its own pin instead of one per city.
+      const placeCount: Record<string, { place: string; count: number }> = {}
       for (const c of allConcerts) {
-        if (c.city) cityCount[c.city] = (cityCount[c.city] ?? 0) + 1
+        if (!c.city) continue
+        const place = c.venue_name ? `${c.venue_name}, ${c.city}` : c.city
+        const key = place.toLowerCase()
+        placeCount[key] = { place, count: (placeCount[key]?.count ?? 0) + 1 }
       }
-      const points: MapPoint[] = []
-      for (const [city, count] of Object.entries(cityCount)) {
-        const coords = geocodeCity(city)
-        if (coords) points.push({ city, lat: coords[0], lng: coords[1], count })
-      }
-      setMapPoints(points)
+
+      const results = await Promise.all(
+        Object.values(placeCount).map(async ({ place, count }) => {
+          const coords = await geocodePlace(place)
+          return coords ? { city: place, lat: coords[0], lng: coords[1], count } : null
+        })
+      )
+      setMapPoints(results.filter((p): p is MapPoint => p !== null))
       setLoading(false)
     })
   }, [user])
