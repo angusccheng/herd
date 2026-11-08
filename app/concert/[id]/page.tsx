@@ -45,7 +45,7 @@ export default function ConcertDetailPage() {
       if (error) {
         console.error(error)
       } else {
-        setConcert(data)
+        setConcert({ ...data, media_urls: data.media_urls ?? [] })
         setNotesDraft(data.notes || '')
         setGenresDraft(data.genres || [])
 

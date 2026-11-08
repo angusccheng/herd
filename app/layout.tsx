@@ -1,15 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Karla } from "next/font/google";
 import { BottomNav } from "./components/BottomNav";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const karla = Karla({
+  variable: "--font-karla",
   subsets: ["latin"],
 });
 
@@ -24,10 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${karla.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         {children}
         <BottomNav />
